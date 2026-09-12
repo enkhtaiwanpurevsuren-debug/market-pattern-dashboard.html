@@ -1,0 +1,607 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F14; --panel:#11161D; --panel-2:#0E1319; --border:#1E2530;
+    --text:#D8DEE6; --muted:#6B7686; --gold:#C9A15A; --green:#3FBF8F; --red:#E0645A; --grid:#1A2029;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+    --sans:'IBM Plex Sans', -apple-system, system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  .eud-root{ background:var(--bg); color:var(--text); font-family:var(--sans); padding:16px; border-radius:8px; max-width:1100px; margin:0 auto; }
+  .eud-header{ display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:14px; }
+  .eud-title{font-size:19px; font-weight:700;}
+  .eud-sub{color:var(--muted); font-size:12.5px; margin-top:3px;}
+  .eud-status{display:flex; align-items:center; gap:8px; font-family:var(--mono); font-size:12px; color:var(--muted);}
+  .eud-dot{width:7px; height:7px; border-radius:50%; background:var(--muted); flex-shrink:0;}
+  .eud-dot.live{background:var(--green); box-shadow:0 0 6px var(--green);}
+  .eud-dot.err{background:var(--red); box-shadow:0 0 6px var(--red);}
+
+  .eud-panel-box{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:12px; margin-bottom:16px; }
+  .eud-panel-box h4{margin:0 0 8px 0; font-size:12.5px; font-weight:600; color:var(--text);}
+  .eud-panel-box textarea{
+    width:100%; min-height:64px; background:var(--panel-2); border:1px solid var(--border); color:var(--text);
+    border-radius:4px; padding:8px; font-family:var(--mono); font-size:11px; resize:vertical; outline:none;
+  }
+  .eud-panel-box textarea:focus{border-color:var(--gold);}
+  .eud-row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:8px;}
+  .eud-field{display:flex; flex-direction:column; gap:4px;}
+  .eud-field label{font-size:11px; color:var(--muted);}
+  .eud-field select{ background:var(--panel-2); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:7px 8px; font-family:var(--mono); font-size:12.5px; }
+  .eud-btn{ background:var(--gold); color:#161006; border:none; border-radius:4px; padding:8px 16px; font-family:var(--sans); font-weight:600; font-size:12.5px; cursor:pointer; }
+  .eud-btn:hover{filter:brightness(1.08);}
+  .eud-btn.ghost{background:transparent; border:1px solid var(--border); color:var(--text);}
+  .eud-btn.ghost:hover{border-color:var(--gold); color:var(--gold);}
+
+  .eud-error{ background:rgba(224,100,90,0.08); border:1px solid var(--red); color:var(--red); border-radius:6px; padding:10px 12px; font-size:12.5px; margin-bottom:16px; font-family:var(--mono); }
+  .eud-hint{color:var(--muted); font-size:11.5px; margin-top:8px; line-height:1.6;}
+  .eud-hint a{color:var(--gold);}
+
+  .eud-metrics{ display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:16px; }
+  .eud-metric{ background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:10px 12px; }
+  .eud-metric .m-label{font-size:10.5px; color:var(--muted); margin-bottom:5px;}
+  .eud-metric .m-value{font-family:var(--mono); font-size:17px; font-weight:600;}
+  .eud-metric .m-sub{font-family:var(--mono); font-size:11px; color:var(--muted); margin-top:2px;}
+  .up{color:var(--green);} .down{color:var(--red);} .neutral{color:var(--gold);}
+
+  .eud-grid{display:grid; grid-template-columns:1.6fr 1fr; gap:14px; margin-bottom:16px;}
+  @media (max-width:760px){ .eud-grid{grid-template-columns:1fr;} }
+
+  .eud-panel{background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:14px;}
+  .eud-panel h3{font-size:13px; margin:0 0 10px 0; font-weight:600; color:var(--text);}
+  .eud-panel h3 .n{color:var(--muted); font-weight:400; font-size:11.5px; margin-left:6px;}
+
+  .eud-match{ display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--grid); font-family:var(--mono); font-size:11.5px; gap:6px; }
+  .eud-match:last-child{border-bottom:none;}
+  .eud-match .sim{color:var(--gold); font-weight:600;}
+  .eud-empty{color:var(--muted); font-size:12.5px; padding:10px 0;}
+
+  .eud-footer{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:4px; padding-top:12px; border-top:1px solid var(--border); }
+  .eud-disclaimer{font-size:11px; color:var(--muted); max-width:600px; line-height:1.5;}
+</style>
+
+<div class="eud-root" id="eudRoot">
+  <div class="eud-header">
+    <div>
+      <div class="eud-title" id="eudTitle">EUR/USD — Pattern Dashboard</div>
+      <div class="eud-sub">Twelve Data-с татсан бодит өгөгдөл · Түүхэн загвар харьцуулалт</div>
+    </div>
+    <div class="eud-status" id="eudStatus">
+      <span class="eud-dot live" id="eudDot"></span>
+      <span id="eudStatusText">Өгөгдөл ачааллаа</span>
+    </div>
+  </div>
+
+  <div id="eudErrorBox"></div>
+
+  <div class="eud-metrics" id="eudMetrics"></div>
+
+  <div class="eud-grid" id="eudMainGrid">
+    <div class="eud-panel">
+      <h3>Одоогийн загвар (сүүлийн <span id="eudChartBarsLabel">60</span> bar)</h3>
+      <div id="eudChartWrap"></div>
+    </div>
+    <div class="eud-panel">
+      <h3>Ижил төстэй түүхэн загварууд<span class="n" id="eudMatchCount"></span></h3>
+      <div id="eudSummary"></div>
+      <div class="eud-match" style="color:var(--muted); font-size:10.5px; border-bottom:1px solid var(--border);">
+        <span>Огноо</span><span>Төстэй байдал</span><span id="eudFwdHeader">Дараагийн өөрчлөлт</span>
+      </div>
+      <div id="eudMatches"></div>
+    </div>
+  </div>
+
+  <div class="eud-panel-box">
+    <h4>Тохиргоо</h4>
+    <div class="eud-row">
+      <div class="eud-field">
+        <label>Хослол</label>
+        <select id="eudSymbol">
+          <optgroup label="Үнэт металл">
+            <option value="XAU/USD">XAU/USD — Алт</option>
+            <option value="XAG/USD">XAG/USD — Мөнгө</option>
+            <option value="XPT/USD">XPT/USD — Платин</option>
+          </optgroup>
+          <optgroup label="Гол форекс">
+            <option value="EUR/USD" selected>EUR/USD</option>
+            <option value="GBP/USD">GBP/USD</option>
+            <option value="USD/JPY">USD/JPY</option>
+            <option value="USD/CHF">USD/CHF</option>
+            <option value="AUD/USD">AUD/USD</option>
+            <option value="USD/CAD">USD/CAD</option>
+            <option value="NZD/USD">NZD/USD</option>
+          </optgroup>
+          <optgroup label="Кросс">
+            <option value="EUR/GBP">EUR/GBP</option>
+            <option value="EUR/JPY">EUR/JPY</option>
+            <option value="GBP/JPY">GBP/JPY</option>
+          </optgroup>
+          <optgroup label="Түүхий эд">
+            <option value="WTI/USD">WTI/USD — Газрын тос</option>
+          </optgroup>
+          <optgroup label="Крипто">
+            <option value="BTC/USD">BTC/USD</option>
+            <option value="ETH/USD">ETH/USD</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="eud-field">
+        <label>Интервал</label>
+        <select id="eudInterval">
+          <option value="15min" selected>15 мин</option>
+          <option value="30min">30 мин</option>
+          <option value="1h">1 цаг</option>
+          <option value="4h">4 цаг</option>
+          <option value="1day">1 өдөр</option>
+        </select>
+      </div>
+      <div class="eud-field">
+        <label>Загварын урт (bars)</label>
+        <select id="eudPatternLen">
+          <option value="12">12</option>
+          <option value="20" selected>20</option>
+          <option value="30">30</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+      <div class="eud-field">
+        <label>Таамгийн урт (bars урагш)</label>
+        <select id="eudHorizon">
+          <option value="10" selected>10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+      <div class="eud-field">
+        <label>Хамгийн бага төстэй байдал</label>
+        <select id="eudMinSim">
+          <option value="0.15" selected>15%</option>
+          <option value="0.3">30%</option>
+          <option value="0.5">50%</option>
+          <option value="0.7">70%</option>
+        </select>
+      </div>
+      <button type="button" class="eud-btn ghost" id="eudRecalcBtn">Дахин тооцоолох</button>
+    </div>
+  </div>
+
+  <div class="eud-panel-box">
+    <h4>Автомат татах</h4>
+    <div id="eudAutoStatus" style="font-size:11.5px; color:var(--muted); line-height:1.6; margin-bottom:10px;">Шалгаж байна…</div>
+    <div class="eud-row" id="eudAutoControls" style="display:none;">
+      <div class="eud-field">
+        <label>API key</label>
+        <input type="password" id="eudApiKey" placeholder="Twelve Data түлхүүр" autocomplete="off"
+          style="background:var(--panel-2); border:1px solid var(--border); color:var(--text); border-radius:4px; padding:7px 8px; font-family:var(--mono); font-size:12.5px; min-width:150px;">
+      </div>
+      <div class="eud-field">
+        <label>Давтамж</label>
+        <select id="eudAutoRefresh">
+          <option value="0" selected>Гараар</option>
+          <option value="300">5 мин</option>
+          <option value="900">15 мин</option>
+          <option value="3600">1 цаг</option>
+        </select>
+      </div>
+      <button type="button" class="eud-btn" id="eudFetchBtn">Одоо татах</button>
+    </div>
+  </div>
+
+  <div class="eud-panel-box">
+    <h4>Гараар шинэчлэх</h4>
+    <div class="eud-hint" style="margin-top:0; margin-bottom:8px;">
+      Сонгосон хослол/интервалд тохирох линк (browser-т нээгээд JSON-г бүгдийг хуулна уу):
+    </div>
+    <div style="background:var(--panel-2); border:1px solid var(--border); border-radius:4px; padding:8px; font-family:var(--mono); font-size:10.5px; word-break:break-all; color:var(--gold);" id="eudUrlBox"></div>
+    <div class="eud-row">
+      <button type="button" class="eud-btn ghost" id="eudCopyUrlBtn">Линк хуулах</button>
+    </div>
+    <textarea id="eudPasteArea" placeholder="Шинэ time_series JSON-ыг энд paste хийнэ үү..."></textarea>
+    <div class="eud-row">
+      <button type="button" class="eud-btn" id="eudUpdateBtn">Шинэ датагаар шинэчлэх</button>
+    </div>
+    <div class="eud-hint">
+      Урт таамаг (50-100 bar) хийхэд илүү олон түүхэн дата хэрэгтэй. Линк доторх <code>outputsize</code>-ыг 5000 хүртэл нэмж болно (үнэгүй багцын кредит хязгаарыг анхаарна уу).
+    </div>
+  </div>
+
+  <div class="eud-footer">
+    <button type="button" class="eud-btn ghost" id="eudAskBtn">Одоогийн нөхцөл байдал, мэдээг судлуулах →</button>
+    <div class="eud-disclaimer">Энэ хэрэгсэл нь зөвхөн статистик, түүхэн загварын харьцуулалт хийдэг. Энэ нь санхүүгийн зөвлөгөө биш бөгөөд арилжааны шийдвэрийг өөрийн эрсдэлээр гаргана уу.</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+
+  // Real EUR/USD 15min data fetched via Twelve Data (provided by the person)
+  const INITIAL_DATA = {"meta":{"symbol":"EUR/USD","interval":"15min","currency_base":"Euro","currency_quote":"US Dollar","type":"Physical Currency"},"values":[{"datetime":"2026-09-12 13:00:00","open":"1.15986","high":"1.15989","low":"1.15981","close":"1.15986"},{"datetime":"2026-09-12 12:45:00","open":"1.15984","high":"1.16051","low":"1.15981","close":"1.15984"},{"datetime":"2026-09-12 12:30:00","open":"1.15984","high":"1.16054","low":"1.15976","close":"1.15982"},{"datetime":"2026-09-12 12:15:00","open":"1.15983","high":"1.15989","low":"1.15981","close":"1.15982"},{"datetime":"2026-09-12 12:00:00","open":"1.15983","high":"1.16046","low":"1.1598","close":"1.15986"},{"datetime":"2026-09-12 11:45:00","open":"1.15987","high":"1.1599","low":"1.15981","close":"1.15986"},{"datetime":"2026-09-12 11:30:00","open":"1.15983","high":"1.16019","low":"1.15973","close":"1.15982"},{"datetime":"2026-09-12 11:15:00","open":"1.15984","high":"1.16035","low":"1.15978","close":"1.15982"},{"datetime":"2026-09-12 11:00:00","open":"1.15983","high":"1.15989","low":"1.15981","close":"1.15986"},{"datetime":"2026-09-12 10:45:00","open":"1.15984","high":"1.16013","low":"1.15976","close":"1.15986"},{"datetime":"2026-09-12 10:30:00","open":"1.15984","high":"1.15989","low":"1.15981","close":"1.15987"},{"datetime":"2026-09-12 10:15:00","open":"1.15984","high":"1.16031","low":"1.15978","close":"1.15982"},{"datetime":"2026-09-12 10:00:00","open":"1.16011","high":"1.16044","low":"1.15974","close":"1.15985"},{"datetime":"2026-09-12 09:45:00","open":"1.16008","high":"1.16047","low":"1.15998","close":"1.16014"},{"datetime":"2026-09-12 09:30:00","open":"1.16012","high":"1.16051","low":"1.16003","close":"1.16034"},{"datetime":"2026-09-12 09:15:00","open":"1.16017","high":"1.16048","low":"1.16009","close":"1.1601"},{"datetime":"2026-09-12 09:00:00","open":"1.16014","high":"1.1605","low":"1.15994","close":"1.16036"},{"datetime":"2026-09-12 08:45:00","open":"1.16011","high":"1.16048","low":"1.16007","close":"1.16017"},{"datetime":"2026-09-12 08:30:00","open":"1.16012","high":"1.1605","low":"1.16004","close":"1.16033"},{"datetime":"2026-09-12 08:15:00","open":"1.16011","high":"1.16048","low":"1.16004","close":"1.16006"},{"datetime":"2026-09-12 08:00:00","open":"1.16025","high":"1.16048","low":"1.15997","close":"1.16011"},{"datetime":"2026-09-12 07:45:00","open":"1.16012","high":"1.1605","low":"1.16004","close":"1.16037"},{"datetime":"2026-09-12 07:30:00","open":"1.16009","high":"1.16044","low":"1.16001","close":"1.1601"},{"datetime":"2026-09-12 07:15:00","open":"1.16014","high":"1.16043","low":"1.16007","close":"1.16008"},{"datetime":"2026-09-12 07:00:00","open":"1.15986","high":"1.16057","low":"1.15986","close":"1.16014"},{"datetime":"2026-09-12 06:45:00","open":"1.15939","high":"1.15991","low":"1.15936","close":"1.15989"},{"datetime":"2026-09-12 06:30:00","open":"1.15936","high":"1.15946","low":"1.15918","close":"1.15941"},{"datetime":"2026-09-12 06:15:00","open":"1.15939","high":"1.15952","low":"1.15931","close":"1.15932"},{"datetime":"2026-09-12 06:00:00","open":"1.15965","high":"1.15969","low":"1.15931","close":"1.15937"},{"datetime":"2026-09-12 05:45:00","open":"1.15956","high":"1.1597","low":"1.15941","close":"1.15967"},{"datetime":"2026-09-12 05:30:00","open":"1.15973","high":"1.15973","low":"1.15947","close":"1.1596"},{"datetime":"2026-09-12 05:15:00","open":"1.15968","high":"1.15984","low":"1.15957","close":"1.15974"},{"datetime":"2026-09-12 05:00:00","open":"1.15951","high":"1.15976","low":"1.15929","close":"1.15972"},{"datetime":"2026-09-12 04:45:00","open":"1.1593","high":"1.15957","low":"1.15922","close":"1.15956"},{"datetime":"2026-09-12 04:30:00","open":"1.15962","high":"1.15964","low":"1.15926","close":"1.15933"},{"datetime":"2026-09-12 04:15:00","open":"1.15988","high":"1.15993","low":"1.15957","close":"1.15961"},{"datetime":"2026-09-12 04:00:00","open":"1.15985","high":"1.16001","low":"1.15982","close":"1.15987"},{"datetime":"2026-09-12 03:45:00","open":"1.15992","high":"1.16006","low":"1.1598","close":"1.15982"},{"datetime":"2026-09-12 03:30:00","open":"1.16","high":"1.16007","low":"1.15981","close":"1.15996"},{"datetime":"2026-09-12 03:15:00","open":"1.15975","high":"1.16007","low":"1.15965","close":"1.15997"},{"datetime":"2026-09-12 03:00:00","open":"1.15994","high":"1.16001","low":"1.15962","close":"1.15977"},{"datetime":"2026-09-12 02:45:00","open":"1.16011","high":"1.16029","low":"1.15986","close":"1.15994"},{"datetime":"2026-09-12 02:30:00","open":"1.16071","high":"1.16071","low":"1.16001","close":"1.16005"},{"datetime":"2026-09-12 02:15:00","open":"1.16037","high":"1.16073","low":"1.1602","close":"1.16072"},{"datetime":"2026-09-12 02:00:00","open":"1.16016","high":"1.16057","low":"1.16016","close":"1.16035"},{"datetime":"2026-09-12 01:45:00","open":"1.16036","high":"1.16038","low":"1.16011","close":"1.16014"},{"datetime":"2026-09-12 01:30:00","open":"1.16053","high":"1.16056","low":"1.16013","close":"1.16038"},{"datetime":"2026-09-12 01:15:00","open":"1.16069","high":"1.16093","low":"1.16044","close":"1.16047"},{"datetime":"2026-09-12 01:00:00","open":"1.16147","high":"1.16167","low":"1.16058","close":"1.16061"},{"datetime":"2026-09-12 00:45:00","open":"1.16089","high":"1.1616","low":"1.16081","close":"1.16151"},{"datetime":"2026-09-12 00:30:00","open":"1.16081","high":"1.16105","low":"1.16067","close":"1.16091"},{"datetime":"2026-09-12 00:15:00","open":"1.16127","high":"1.16135","low":"1.16077","close":"1.1608"},{"datetime":"2026-09-12 00:00:00","open":"1.16101","high":"1.16148","low":"1.16075","close":"1.16119"},{"datetime":"2026-09-11 23:45:00","open":"1.16027","high":"1.16124","low":"1.16012","close":"1.16115"},{"datetime":"2026-09-11 23:30:00","open":"1.16047","high":"1.16095","low":"1.16016","close":"1.16021"},{"datetime":"2026-09-11 23:15:00","open":"1.16022","high":"1.1607","low":"1.15988","close":"1.16064"},{"datetime":"2026-09-11 23:00:00","open":"1.16014","high":"1.16089","low":"1.16005","close":"1.16013"},{"datetime":"2026-09-11 22:45:00","open":"1.15913","high":"1.16031","low":"1.1591","close":"1.16007"},{"datetime":"2026-09-11 22:30:00","open":"1.1595","high":"1.15961","low":"1.15691","close":"1.15913"},{"datetime":"2026-09-11 22:15:00","open":"1.15926","high":"1.15957","low":"1.15908","close":"1.15956"},{"datetime":"2026-09-11 22:00:00","open":"1.15915","high":"1.15946","low":"1.15909","close":"1.15923"},{"datetime":"2026-09-11 21:45:00","open":"1.15923","high":"1.15953","low":"1.15914","close":"1.15915"},{"datetime":"2026-09-11 21:30:00","open":"1.15939","high":"1.15951","low":"1.15918","close":"1.1592"},{"datetime":"2026-09-11 21:15:00","open":"1.15938","high":"1.15947","low":"1.15915","close":"1.15941"},{"datetime":"2026-09-11 21:00:00","open":"1.15919","high":"1.15949","low":"1.15916","close":"1.15944"},{"datetime":"2026-09-11 20:45:00","open":"1.15914","high":"1.15927","low":"1.15903","close":"1.15924"},{"datetime":"2026-09-11 20:30:00","open":"1.15925","high":"1.15937","low":"1.15902","close":"1.15915"},{"datetime":"2026-09-11 20:15:00","open":"1.15953","high":"1.15966","low":"1.15919","close":"1.15927"},{"datetime":"2026-09-11 20:00:00","open":"1.15959","high":"1.1599","low":"1.15946","close":"1.15959"},{"datetime":"2026-09-11 19:45:00","open":"1.15984","high":"1.15993","low":"1.15953","close":"1.15957"},{"datetime":"2026-09-11 19:30:00","open":"1.1601","high":"1.1601","low":"1.15976","close":"1.15989"},{"datetime":"2026-09-11 19:15:00","open":"1.15979","high":"1.16021","low":"1.15964","close":"1.16009"},{"datetime":"2026-09-11 19:00:00","open":"1.15993","high":"1.16021","low":"1.15961","close":"1.15981"},{"datetime":"2026-09-11 18:45:00","open":"1.16049","high":"1.16053","low":"1.15988","close":"1.1599"},{"datetime":"2026-09-11 18:30:00","open":"1.16027","high":"1.16053","low":"1.1602","close":"1.16049"},{"datetime":"2026-09-11 18:15:00","open":"1.16054","high":"1.16079","low":"1.16017","close":"1.16025"},{"datetime":"2026-09-11 18:00:00","open":"1.16052","high":"1.16062","low":"1.16034","close":"1.16058"},{"datetime":"2026-09-11 17:45:00","open":"1.16067","high":"1.16073","low":"1.16016","close":"1.16048"},{"datetime":"2026-09-11 17:30:00","open":"1.16088","high":"1.16095","low":"1.16054","close":"1.16059"},{"datetime":"2026-09-11 17:15:00","open":"1.16087","high":"1.16104","low":"1.16067","close":"1.16091"},{"datetime":"2026-09-11 17:00:00","open":"1.16103","high":"1.16108","low":"1.16071","close":"1.16082"},{"datetime":"2026-09-11 16:45:00","open":"1.16102","high":"1.16127","low":"1.1609","close":"1.16104"},{"datetime":"2026-09-11 16:30:00","open":"1.16112","high":"1.16122","low":"1.16095","close":"1.16098"},{"datetime":"2026-09-11 16:15:00","open":"1.16111","high":"1.16141","low":"1.16108","close":"1.16113"},{"datetime":"2026-09-11 16:00:00","open":"1.16111","high":"1.16124","low":"1.16088","close":"1.16115"},{"datetime":"2026-09-11 15:45:00","open":"1.16116","high":"1.16131","low":"1.1609","close":"1.16112"},{"datetime":"2026-09-11 15:30:00","open":"1.16094","high":"1.16141","low":"1.16094","close":"1.16114"},{"datetime":"2026-09-11 15:15:00","open":"1.1608","high":"1.16109","low":"1.16069","close":"1.16094"},{"datetime":"2026-09-11 15:00:00","open":"1.1605","high":"1.16087","low":"1.16047","close":"1.16083"},{"datetime":"2026-09-11 14:45:00","open":"1.16061","high":"1.16071","low":"1.16047","close":"1.16049"},{"datetime":"2026-09-11 14:30:00","open":"1.16078","high":"1.16085","low":"1.16054","close":"1.16063"},{"datetime":"2026-09-11 14:15:00","open":"1.16066","high":"1.16084","low":"1.16058","close":"1.1608"},{"datetime":"2026-09-11 14:00:00","open":"1.16027","high":"1.16071","low":"1.16008","close":"1.16069"},{"datetime":"2026-09-11 13:45:00","open":"1.16022","high":"1.16034","low":"1.15996","close":"1.16021"},{"datetime":"2026-09-11 13:30:00","open":"1.1602","high":"1.16028","low":"1.16005","close":"1.16021"},{"datetime":"2026-09-11 13:15:00","open":"1.1607","high":"1.16077","low":"1.16016","close":"1.16021"},{"datetime":"2026-09-11 13:00:00","open":"1.1608","high":"1.16082","low":"1.16055","close":"1.16072"},{"datetime":"2026-09-11 12:45:00","open":"1.16078","high":"1.1609","low":"1.1607","close":"1.16082"},{"datetime":"2026-09-11 12:30:00","open":"1.16068","high":"1.16087","low":"1.16057","close":"1.16077"},{"datetime":"2026-09-11 12:15:00","open":"1.161","high":"1.16104","low":"1.16063","close":"1.1607"},{"datetime":"2026-09-11 12:00:00","open":"1.16116","high":"1.16134","low":"1.16093","close":"1.16107"},{"datetime":"2026-09-11 11:45:00","open":"1.16149","high":"1.16149","low":"1.16112","close":"1.1612"},{"datetime":"2026-09-11 11:30:00","open":"1.16164","high":"1.16172","low":"1.16139","close":"1.16151"},{"datetime":"2026-09-11 11:15:00","open":"1.16167","high":"1.16178","low":"1.16149","close":"1.16166"},{"datetime":"2026-09-11 11:00:00","open":"1.16139","high":"1.16172","low":"1.16139","close":"1.16169"},{"datetime":"2026-09-11 10:45:00","open":"1.16136","high":"1.16152","low":"1.16128","close":"1.16149"},{"datetime":"2026-09-11 10:30:00","open":"1.16129","high":"1.16146","low":"1.16121","close":"1.16133"},{"datetime":"2026-09-11 10:15:00","open":"1.16142","high":"1.16147","low":"1.16116","close":"1.16133"},{"datetime":"2026-09-11 10:00:00","open":"1.16101","high":"1.16148","low":"1.161","close":"1.16144"},{"datetime":"2026-09-11 09:45:00","open":"1.16095","high":"1.16109","low":"1.16091","close":"1.16105"},{"datetime":"2026-09-11 09:30:00","open":"1.1609","high":"1.16106","low":"1.16085","close":"1.16101"},{"datetime":"2026-09-11 09:15:00","open":"1.16093","high":"1.16108","low":"1.16085","close":"1.16087"},{"datetime":"2026-09-11 09:00:00","open":"1.1611","high":"1.16116","low":"1.16089","close":"1.16093"},{"datetime":"2026-09-11 08:45:00","open":"1.161","high":"1.16115","low":"1.16091","close":"1.16114"},{"datetime":"2026-09-11 08:30:00","open":"1.16093","high":"1.16102","low":"1.16085","close":"1.16102"},{"datetime":"2026-09-11 08:15:00","open":"1.16082","high":"1.16106","low":"1.16082","close":"1.1609"},{"datetime":"2026-09-11 08:00:00","open":"1.16089","high":"1.16108","low":"1.16073","close":"1.16087"},{"datetime":"2026-09-11 07:45:00","open":"1.161","high":"1.1611","low":"1.16077","close":"1.16101"},{"datetime":"2026-09-11 07:30:00","open":"1.16093","high":"1.16109","low":"1.1609","close":"1.161"},{"datetime":"2026-09-11 07:15:00","open":"1.16099","high":"1.1611","low":"1.16084","close":"1.16086"},{"datetime":"2026-09-11 07:00:00","open":"1.16102","high":"1.16158","low":"1.16083","close":"1.16098"},{"datetime":"2026-09-11 06:45:00","open":"1.1608","high":"1.16109","low":"1.1607","close":"1.16105"},{"datetime":"2026-09-11 06:30:00","open":"1.1606","high":"1.16097","low":"1.1606","close":"1.16077"},{"datetime":"2026-09-11 06:15:00","open":"1.16093","high":"1.16099","low":"1.16056","close":"1.16057"},{"datetime":"2026-09-11 06:00:00","open":"1.16102","high":"1.16108","low":"1.1609","close":"1.16091"},{"datetime":"2026-09-11 05:45:00","open":"1.1612","high":"1.16125","low":"1.16101","close":"1.16102"},{"datetime":"2026-09-11 05:30:00","open":"1.16123","high":"1.16126","low":"1.16105","close":"1.16122"},{"datetime":"2026-09-11 05:15:00","open":"1.16097","high":"1.16136","low":"1.16093","close":"1.16125"},{"datetime":"2026-09-11 05:00:00","open":"1.16138","high":"1.16138","low":"1.16091","close":"1.16093"},{"datetime":"2026-09-11 04:45:00","open":"1.16152","high":"1.16167","low":"1.16129","close":"1.16135"},{"datetime":"2026-09-11 04:30:00","open":"1.16157","high":"1.16166","low":"1.16135","close":"1.16157"},{"datetime":"2026-09-11 04:15:00","open":"1.16138","high":"1.16169","low":"1.16128","close":"1.16163"},{"datetime":"2026-09-11 04:00:00","open":"1.16195","high":"1.16198","low":"1.16131","close":"1.16141"},{"datetime":"2026-09-11 03:45:00","open":"1.16195","high":"1.16221","low":"1.1619","close":"1.16192"},{"datetime":"2026-09-11 03:30:00","open":"1.16217","high":"1.16224","low":"1.16193","close":"1.16201"},{"datetime":"2026-09-11 03:15:00","open":"1.16208","high":"1.16233","low":"1.16207","close":"1.16218"},{"datetime":"2026-09-11 03:00:00","open":"1.16195","high":"1.16218","low":"1.16172","close":"1.16207"},{"datetime":"2026-09-11 02:45:00","open":"1.16208","high":"1.16225","low":"1.1619","close":"1.16192"},{"datetime":"2026-09-11 02:30:00","open":"1.16273","high":"1.16273","low":"1.16199","close":"1.16219"},{"datetime":"2026-09-11 02:15:00","open":"1.16255","high":"1.16291","low":"1.16243","close":"1.16264"},{"datetime":"2026-09-11 02:00:00","open":"1.1628","high":"1.1629","low":"1.16241","close":"1.16248"},{"datetime":"2026-09-11 01:45:00","open":"1.16288","high":"1.16297","low":"1.16245","close":"1.16282"},{"datetime":"2026-09-11 01:30:00","open":"1.16257","high":"1.16293","low":"1.16245","close":"1.1629"},{"datetime":"2026-09-11 01:15:00","open":"1.16294","high":"1.16314","low":"1.16244","close":"1.16258"},{"datetime":"2026-09-11 01:00:00","open":"1.16282","high":"1.1631","low":"1.16259","close":"1.16302"},{"datetime":"2026-09-11 00:45:00","open":"1.16246","high":"1.16287","low":"1.16231","close":"1.16281"},{"datetime":"2026-09-11 00:30:00","open":"1.1623","high":"1.16275","low":"1.162","close":"1.16241"},{"datetime":"2026-09-11 00:15:00","open":"1.16202","high":"1.16247","low":"1.16162","close":"1.1624"},{"datetime":"2026-09-11 00:00:00","open":"1.16123","high":"1.16225","low":"1.16117","close":"1.16197"},{"datetime":"2026-09-10 23:45:00","open":"1.1616","high":"1.16194","low":"1.16117","close":"1.16121"},{"datetime":"2026-09-10 23:30:00","open":"1.16023","high":"1.1617","low":"1.16012","close":"1.16168"},{"datetime":"2026-09-10 23:15:00","open":"1.16019","high":"1.16065","low":"1.15988","close":"1.16031"},{"datetime":"2026-09-10 23:00:00","open":"1.16042","high":"1.16066","low":"1.16009","close":"1.16016"},{"datetime":"2026-09-10 22:45:00","open":"1.15979","high":"1.16106","low":"1.15979","close":"1.16049"},{"datetime":"2026-09-10 22:30:00","open":"1.16231","high":"1.16282","low":"1.15935","close":"1.1599"},{"datetime":"2026-09-10 22:15:00","open":"1.16161","high":"1.16245","low":"1.16107","close":"1.16219"},{"datetime":"2026-09-10 22:00:00","open":"1.16164","high":"1.16193","low":"1.16148","close":"1.16161"},{"datetime":"2026-09-10 21:45:00","open":"1.16258","high":"1.16271","low":"1.16156","close":"1.16158"},{"datetime":"2026-09-10 21:30:00","open":"1.16257","high":"1.16262","low":"1.16225","close":"1.16259"},{"datetime":"2026-09-10 21:15:00","open":"1.1624","high":"1.16268","low":"1.16217","close":"1.16264"},{"datetime":"2026-09-10 21:00:00","open":"1.16285","high":"1.16286","low":"1.16234","close":"1.16243"},{"datetime":"2026-09-10 20:45:00","open":"1.16254","high":"1.16297","low":"1.16237","close":"1.16281"},{"datetime":"2026-09-10 20:30:00","open":"1.16323","high":"1.16323","low":"1.16241","close":"1.16256"},{"datetime":"2026-09-10 20:15:00","open":"1.16359","high":"1.16366","low":"1.16315","close":"1.16327"},{"datetime":"2026-09-10 20:00:00","open":"1.16346","high":"1.16387","low":"1.16337","close":"1.1636"},{"datetime":"2026-09-10 19:45:00","open":"1.16324","high":"1.16354","low":"1.16314","close":"1.16342"},{"datetime":"2026-09-10 19:30:00","open":"1.16374","high":"1.1638","low":"1.16314","close":"1.16321"},{"datetime":"2026-09-10 19:15:00","open":"1.16395","high":"1.16406","low":"1.16348","close":"1.16376"},{"datetime":"2026-09-10 19:00:00","open":"1.16376","high":"1.16402","low":"1.16368","close":"1.164"},{"datetime":"2026-09-10 18:45:00","open":"1.16371","high":"1.16385","low":"1.16347","close":"1.16382"},{"datetime":"2026-09-10 18:30:00","open":"1.16375","high":"1.16401","low":"1.16356","close":"1.16364"},{"datetime":"2026-09-10 18:15:00","open":"1.16359","high":"1.16384","low":"1.16355","close":"1.16374"},{"datetime":"2026-09-10 18:00:00","open":"1.16399","high":"1.16402","low":"1.16356","close":"1.16362"},{"datetime":"2026-09-10 17:45:00","open":"1.16404","high":"1.1642","low":"1.16386","close":"1.16395"},{"datetime":"2026-09-10 17:30:00","open":"1.16385","high":"1.16419","low":"1.16381","close":"1.16409"},{"datetime":"2026-09-10 17:15:00","open":"1.1638","high":"1.164","low":"1.16378","close":"1.16383"},{"datetime":"2026-09-10 17:00:00","open":"1.164","high":"1.16401","low":"1.16362","close":"1.16382"},{"datetime":"2026-09-10 16:45:00","open":"1.16385","high":"1.16406","low":"1.16367","close":"1.16401"},{"datetime":"2026-09-10 16:30:00","open":"1.16397","high":"1.16405","low":"1.1638","close":"1.16384"},{"datetime":"2026-09-10 16:15:00","open":"1.16384","high":"1.16401","low":"1.16379","close":"1.16393"},{"datetime":"2026-09-10 16:00:00","open":"1.164","high":"1.16405","low":"1.16379","close":"1.16381"},{"datetime":"2026-09-10 15:45:00","open":"1.1638","high":"1.16407","low":"1.16374","close":"1.16397"},{"datetime":"2026-09-10 15:30:00","open":"1.16382","high":"1.16405","low":"1.16375","close":"1.16376"},{"datetime":"2026-09-10 15:15:00","open":"1.16375","high":"1.16395","low":"1.16375","close":"1.16383"},{"datetime":"2026-09-10 15:00:00","open":"1.16373","high":"1.16384","low":"1.16371","close":"1.16379"},{"datetime":"2026-09-10 14:45:00","open":"1.16383","high":"1.16384","low":"1.16366","close":"1.16374"},{"datetime":"2026-09-10 14:30:00","open":"1.16381","high":"1.16394","low":"1.16381","close":"1.16383"},{"datetime":"2026-09-10 14:15:00","open":"1.16401","high":"1.16403","low":"1.1638","close":"1.16381"},{"datetime":"2026-09-10 14:00:00","open":"1.16382","high":"1.16406","low":"1.16376","close":"1.16405"},{"datetime":"2026-09-10 13:45:00","open":"1.1637","high":"1.16385","low":"1.16367","close":"1.16384"},{"datetime":"2026-09-10 13:30:00","open":"1.16373","high":"1.16384","low":"1.16367","close":"1.16368"},{"datetime":"2026-09-10 13:15:00","open":"1.16369","high":"1.16377","low":"1.16364","close":"1.16372"},{"datetime":"2026-09-10 13:00:00","open":"1.16379","high":"1.16403","low":"1.1637","close":"1.16372"},{"datetime":"2026-09-10 12:45:00","open":"1.16373","high":"1.1639","low":"1.16364","close":"1.16382"},{"datetime":"2026-09-10 12:30:00","open":"1.16366","high":"1.16379","low":"1.16343","close":"1.16374"},{"datetime":"2026-09-10 12:15:00","open":"1.16387","high":"1.16389","low":"1.16364","close":"1.16367"},{"datetime":"2026-09-10 12:00:00","open":"1.16387","high":"1.1641","low":"1.16375","close":"1.16389"},{"datetime":"2026-09-10 11:45:00","open":"1.16333","high":"1.16397","low":"1.16333","close":"1.16391"},{"datetime":"2026-09-10 11:30:00","open":"1.16329","high":"1.16346","low":"1.16327","close":"1.16332"},{"datetime":"2026-09-10 11:15:00","open":"1.16346","high":"1.16367","low":"1.16326","close":"1.16327"},{"datetime":"2026-09-10 11:00:00","open":"1.16325","high":"1.16352","low":"1.16311","close":"1.16349"},{"datetime":"2026-09-10 10:45:00","open":"1.16315","high":"1.16339","low":"1.16307","close":"1.16318"},{"datetime":"2026-09-10 10:30:00","open":"1.16322","high":"1.16327","low":"1.16301","close":"1.16312"},{"datetime":"2026-09-10 10:15:00","open":"1.1634","high":"1.16345","low":"1.16316","close":"1.16319"},{"datetime":"2026-09-10 10:00:00","open":"1.16337","high":"1.16349","low":"1.16317","close":"1.16343"},{"datetime":"2026-09-10 09:45:00","open":"1.16357","high":"1.16364","low":"1.16333","close":"1.16341"},{"datetime":"2026-09-10 09:30:00","open":"1.1637","high":"1.1638","low":"1.16352","close":"1.16354"},{"datetime":"2026-09-10 09:15:00","open":"1.16378","high":"1.16385","low":"1.16366","close":"1.1637"},{"datetime":"2026-09-10 09:00:00","open":"1.16375","high":"1.16385","low":"1.16368","close":"1.1638"},{"datetime":"2026-09-10 08:45:00","open":"1.16376","high":"1.16382","low":"1.16364","close":"1.16379"},{"datetime":"2026-09-10 08:30:00","open":"1.16385","high":"1.1639","low":"1.16363","close":"1.1638"},{"datetime":"2026-09-10 08:15:00","open":"1.16363","high":"1.1639","low":"1.16358","close":"1.16383"},{"datetime":"2026-09-10 08:00:00","open":"1.16355","high":"1.1637","low":"1.16335","close":"1.16364"},{"datetime":"2026-09-10 07:45:00","open":"1.1636","high":"1.16368","low":"1.16351","close":"1.16358"},{"datetime":"2026-09-10 07:30:00","open":"1.16364","high":"1.16376","low":"1.16353","close":"1.16362"},{"datetime":"2026-09-10 07:15:00","open":"1.16358","high":"1.16381","low":"1.16353","close":"1.16364"},{"datetime":"2026-09-10 07:00:00","open":"1.16331","high":"1.1637","low":"1.16312","close":"1.16357"},{"datetime":"2026-09-10 06:45:00","open":"1.16312","high":"1.16343","low":"1.16309","close":"1.16334"},{"datetime":"2026-09-10 06:30:00","open":"1.16293","high":"1.16323","low":"1.16293","close":"1.16315"},{"datetime":"2026-09-10 06:15:00","open":"1.16292","high":"1.16301","low":"1.1628","close":"1.16292"},{"datetime":"2026-09-10 06:00:00","open":"1.16317","high":"1.16318","low":"1.16283","close":"1.16295"},{"datetime":"2026-09-10 05:45:00","open":"1.16299","high":"1.16322","low":"1.16296","close":"1.16319"},{"datetime":"2026-09-10 05:30:00","open":"1.1628","high":"1.16302","low":"1.16274","close":"1.16301"},{"datetime":"2026-09-10 05:15:00","open":"1.16268","high":"1.163","low":"1.16267","close":"1.16277"},{"datetime":"2026-09-10 05:00:00","open":"1.1629","high":"1.16299","low":"1.16263","close":"1.16266"},{"datetime":"2026-09-10 04:45:00","open":"1.16314","high":"1.16316","low":"1.16286","close":"1.16292"},{"datetime":"2026-09-10 04:30:00","open":"1.1636","high":"1.1636","low":"1.16312","close":"1.16313"},{"datetime":"2026-09-10 04:15:00","open":"1.16389","high":"1.16397","low":"1.16351","close":"1.16357"},{"datetime":"2026-09-10 04:00:00","open":"1.16389","high":"1.16395","low":"1.16375","close":"1.16388"},{"datetime":"2026-09-10 03:45:00","open":"1.16392","high":"1.16394","low":"1.16375","close":"1.1639"},{"datetime":"2026-09-10 03:30:00","open":"1.16407","high":"1.16407","low":"1.16366","close":"1.16394"},{"datetime":"2026-09-10 03:15:00","open":"1.16391","high":"1.16409","low":"1.16377","close":"1.16409"},{"datetime":"2026-09-10 03:00:00","open":"1.16364","high":"1.16408","low":"1.16353","close":"1.1639"},{"datetime":"2026-09-10 02:45:00","open":"1.16356","high":"1.16396","low":"1.16347","close":"1.16366"},{"datetime":"2026-09-10 02:30:00","open":"1.16293","high":"1.16362","low":"1.16287","close":"1.16361"},{"datetime":"2026-09-10 02:15:00","open":"1.16295","high":"1.16302","low":"1.16272","close":"1.16288"},{"datetime":"2026-09-10 02:00:00","open":"1.16262","high":"1.16338","low":"1.16262","close":"1.163"},{"datetime":"2026-09-10 01:45:00","open":"1.1632","high":"1.16329","low":"1.16257","close":"1.1626"},{"datetime":"2026-09-10 01:30:00","open":"1.16238","high":"1.16328","low":"1.16238","close":"1.16324"},{"datetime":"2026-09-10 01:15:00","open":"1.16247","high":"1.16253","low":"1.16205","close":"1.16235"},{"datetime":"2026-09-10 01:00:00","open":"1.1647","high":"1.16513","low":"1.16241","close":"1.16243"},{"datetime":"2026-09-10 00:45:00","open":"1.1646","high":"1.16483","low":"1.16446","close":"1.16466"},{"datetime":"2026-09-10 00:30:00","open":"1.16468","high":"1.16473","low":"1.16446","close":"1.16462"},{"datetime":"2026-09-10 00:15:00","open":"1.16493","high":"1.16534","low":"1.16455","close":"1.16465"},{"datetime":"2026-09-10 00:00:00","open":"1.16463","high":"1.16513","low":"1.16463","close":"1.16481"},{"datetime":"2026-09-09 23:45:00","open":"1.16461","high":"1.16504","low":"1.16458","close":"1.16459"},{"datetime":"2026-09-09 23:30:00","open":"1.16475","high":"1.16496","low":"1.1645","close":"1.16475"},{"datetime":"2026-09-09 23:15:00","open":"1.1648","high":"1.16483","low":"1.16448","close":"1.16478"},{"datetime":"2026-09-09 23:00:00","open":"1.16449","high":"1.16491","low":"1.16449","close":"1.16483"},{"datetime":"2026-09-09 22:45:00","open":"1.16477","high":"1.1648","low":"1.1642","close":"1.16442"},{"datetime":"2026-09-09 22:30:00","open":"1.16465","high":"1.16495","low":"1.16452","close":"1.16479"},{"datetime":"2026-09-09 22:15:00","open":"1.16526","high":"1.16526","low":"1.16461","close":"1.16463"},{"datetime":"2026-09-09 22:00:00","open":"1.16458","high":"1.16538","low":"1.16458","close":"1.16522"},{"datetime":"2026-09-09 21:45:00","open":"1.16449","high":"1.16487","low":"1.16431","close":"1.16463"},{"datetime":"2026-09-09 21:30:00","open":"1.1645","high":"1.16491","low":"1.16424","close":"1.16441"},{"datetime":"2026-09-09 21:15:00","open":"1.16329","high":"1.16463","low":"1.16312","close":"1.1646"},{"datetime":"2026-09-09 21:00:00","open":"1.16305","high":"1.16339","low":"1.163","close":"1.16334"},{"datetime":"2026-09-09 20:45:00","open":"1.16295","high":"1.16328","low":"1.16278","close":"1.16308"},{"datetime":"2026-09-09 20:30:00","open":"1.16269","high":"1.16319","low":"1.16261","close":"1.16286"},{"datetime":"2026-09-09 20:15:00","open":"1.16271","high":"1.16276","low":"1.16234","close":"1.16273"},{"datetime":"2026-09-09 20:00:00","open":"1.16232","high":"1.16284","low":"1.16224","close":"1.16272"},{"datetime":"2026-09-09 19:45:00","open":"1.16311","high":"1.16313","low":"1.16228","close":"1.16229"},{"datetime":"2026-09-09 19:30:00","open":"1.16339","high":"1.16339","low":"1.16309","close":"1.1631"},{"datetime":"2026-09-09 19:15:00","open":"1.16312","high":"1.16345","low":"1.16309","close":"1.16331"},{"datetime":"2026-09-09 19:00:00","open":"1.16342","high":"1.16345","low":"1.16309","close":"1.16311"},{"datetime":"2026-09-09 18:45:00","open":"1.16355","high":"1.16371","low":"1.16332","close":"1.16336"},{"datetime":"2026-09-09 18:30:00","open":"1.16368","high":"1.16373","low":"1.16343","close":"1.16348"},{"datetime":"2026-09-09 18:15:00","open":"1.16392","high":"1.164","low":"1.1636","close":"1.16363"},{"datetime":"2026-09-09 18:00:00","open":"1.1643","high":"1.1643","low":"1.16363","close":"1.16398"},{"datetime":"2026-09-09 17:45:00","open":"1.16433","high":"1.16485","low":"1.16417","close":"1.16422"},{"datetime":"2026-09-09 17:30:00","open":"1.16393","high":"1.16441","low":"1.16374","close":"1.16427"},{"datetime":"2026-09-09 17:15:00","open":"1.1644","high":"1.16455","low":"1.16382","close":"1.16395"},{"datetime":"2026-09-09 17:00:00","open":"1.16396","high":"1.16447","low":"1.16385","close":"1.16446"},{"datetime":"2026-09-09 16:45:00","open":"1.16382","high":"1.16401","low":"1.16366","close":"1.16397"},{"datetime":"2026-09-09 16:30:00","open":"1.16413","high":"1.16423","low":"1.16377","close":"1.16379"},{"datetime":"2026-09-09 16:15:00","open":"1.16397","high":"1.16454","low":"1.16392","close":"1.16414"},{"datetime":"2026-09-09 16:00:00","open":"1.16351","high":"1.16404","low":"1.16343","close":"1.16403"},{"datetime":"2026-09-09 15:45:00","open":"1.16341","high":"1.16355","low":"1.16325","close":"1.16353"},{"datetime":"2026-09-09 15:30:00","open":"1.16366","high":"1.16369","low":"1.16335","close":"1.16338"},{"datetime":"2026-09-09 15:15:00","open":"1.16346","high":"1.16371","low":"1.16333","close":"1.16369"},{"datetime":"2026-09-09 15:00:00","open":"1.16329","high":"1.16351","low":"1.16314","close":"1.16349"},{"datetime":"2026-09-09 14:45:00","open":"1.16316","high":"1.16333","low":"1.16307","close":"1.16332"},{"datetime":"2026-09-09 14:30:00","open":"1.1633","high":"1.16338","low":"1.16309","close":"1.1632"},{"datetime":"2026-09-09 14:15:00","open":"1.16309","high":"1.16335","low":"1.16302","close":"1.16334"},{"datetime":"2026-09-09 14:00:00","open":"1.16306","high":"1.16317","low":"1.16297","close":"1.16312"},{"datetime":"2026-09-09 13:45:00","open":"1.16313","high":"1.16324","low":"1.16294","close":"1.16299"},{"datetime":"2026-09-09 13:30:00","open":"1.16301","high":"1.16318","low":"1.1629","close":"1.16316"},{"datetime":"2026-09-09 13:15:00","open":"1.16311","high":"1.16315","low":"1.16297","close":"1.16299"},{"datetime":"2026-09-09 13:00:00","open":"1.1631","high":"1.16321","low":"1.16299","close":"1.16307"},{"datetime":"2026-09-09 12:45:00","open":"1.1629","high":"1.1632","low":"1.16286","close":"1.16308"},{"datetime":"2026-09-09 12:30:00","open":"1.16284","high":"1.16298","low":"1.16282","close":"1.16287"},{"datetime":"2026-09-09 12:15:00","open":"1.1631","high":"1.1631","low":"1.1628","close":"1.16282"},{"datetime":"2026-09-09 12:00:00","open":"1.1631","high":"1.16318","low":"1.16284","close":"1.16311"},{"datetime":"2026-09-09 11:45:00","open":"1.16295","high":"1.16318","low":"1.16289","close":"1.16307"},{"datetime":"2026-09-09 11:30:00","open":"1.16285","high":"1.16301","low":"1.16275","close":"1.16299"},{"datetime":"2026-09-09 11:15:00","open":"1.16313","high":"1.16324","low":"1.16276","close":"1.16288"},{"datetime":"2026-09-09 11:00:00","open":"1.16319","high":"1.16334","low":"1.1629","close":"1.16315"},{"datetime":"2026-09-09 10:45:00","open":"1.16306","high":"1.16324","low":"1.16297","close":"1.16323"},{"datetime":"2026-09-09 10:30:00","open":"1.16313","high":"1.16322","low":"1.16297","close":"1.16309"},{"datetime":"2026-09-09 10:15:00","open":"1.16308","high":"1.16325","low":"1.16299","close":"1.16308"}],"status":"ok"};
+
+  let state = { candles: [], patternLen: 20, forwardHorizon: 10, minSim: 0.15, interval: '15min', symbol: 'EUR/USD', loadedSymbol: 'EUR/USD', loadedInterval: '15min', lastPrice: null, lastTrend: null, lastMatches: [] };
+
+  function setStatus(text, mode){
+    $('eudStatusText').textContent = text;
+    $('eudDot').className = 'eud-dot' + (mode === 'live' ? ' live' : mode === 'err' ? ' err' : '');
+  }
+  function showError(msg){ $('eudErrorBox').innerHTML = msg ? `<div class="eud-error">${msg}</div>` : ''; }
+
+  function parseTwelveDataJson(raw){
+    let json;
+    try{ json = JSON.parse(raw); }catch(e){ throw new Error('JSON parse хийж чадсангүй: ' + e.message); }
+    if(json.status === 'error' || json.code){ throw new Error(json.message || 'API алдаа'); }
+    if(!json.values || !json.values.length){ throw new Error('values массив хоосон байна'); }
+    if(json.meta){
+      if(json.meta.symbol) state.loadedSymbol = json.meta.symbol;
+      if(json.meta.interval) state.loadedInterval = json.meta.interval;
+    }
+    return json.values.map(v => ({
+      time: v.datetime,
+      open: parseFloat(v.open), high: parseFloat(v.high), low: parseFloat(v.low), close: parseFloat(v.close),
+    })).reverse();
+  }
+
+  function pearson(a, b){
+    const n = Math.min(a.length, b.length);
+    if(n < 3) return 0;
+    let meanA=0, meanB=0;
+    for(let i=0;i<n;i++){ meanA += a[i]; meanB += b[i]; }
+    meanA/=n; meanB/=n;
+    let num=0, denA=0, denB=0;
+    for(let i=0;i<n;i++){ const da=a[i]-meanA, db=b[i]-meanB; num+=da*db; denA+=da*da; denB+=db*db; }
+    const den = Math.sqrt(denA*denB);
+    return den === 0 ? 0 : num/den;
+  }
+  function toReturns(closes){ const r=[]; for(let i=1;i<closes.length;i++) r.push((closes[i]-closes[i-1])/closes[i-1]); return r; }
+
+  function findPatternMatches(candles, patternLen, forwardHorizon, minSim){
+    if(candles.length < patternLen*2 + forwardHorizon) return [];
+    const closes = candles.map(c=>c.close);
+    const currentReturns = toReturns(closes.slice(closes.length - patternLen));
+    const results = [];
+    const lastValidStart = closes.length - patternLen - forwardHorizon;
+    const excludeAfter = closes.length - patternLen - Math.floor(patternLen/2);
+    for(let s=0; s<lastValidStart; s++){
+      if(s > excludeAfter) continue;
+      const winReturns = toReturns(closes.slice(s, s+patternLen));
+      const corr = pearson(currentReturns, winReturns);
+      if(corr <= minSim) continue;
+      const endIdx = s + patternLen - 1, fwdIdx = endIdx + forwardHorizon;
+      if(fwdIdx >= closes.length) continue;
+      // max favourable / adverse excursion over the forward window
+      let maxUp = 0, maxDown = 0;
+      for(let k=endIdx+1; k<=fwdIdx; k++){
+        const move = (closes[k]-closes[endIdx])/closes[endIdx];
+        if(move > maxUp) maxUp = move;
+        if(move < maxDown) maxDown = move;
+      }
+      results.push({
+        startTime: candles[s].time,
+        similarity: corr,
+        forwardReturn: (closes[fwdIdx]-closes[endIdx])/closes[endIdx],
+        maxUp, maxDown,
+      });
+    }
+    results.sort((a,b)=> b.similarity - a.similarity);
+    return results;
+  }
+
+  function summarizeMatches(matches){
+    if(!matches.length) return null;
+    const rets = matches.map(m=>m.forwardReturn);
+    const mean = rets.reduce((a,b)=>a+b,0)/rets.length;
+    const sorted = [...rets].sort((a,b)=>a-b);
+    const median = sorted.length % 2 ? sorted[(sorted.length-1)/2] : (sorted[sorted.length/2-1]+sorted[sorted.length/2])/2;
+    const upCount = rets.filter(r=>r>0).length;
+    const avgMaxUp = matches.reduce((a,m)=>a+m.maxUp,0)/matches.length;
+    const avgMaxDown = matches.reduce((a,m)=>a+m.maxDown,0)/matches.length;
+    return { n: matches.length, mean, median, upCount, downCount: rets.length-upCount, avgMaxUp, avgMaxDown };
+  }
+
+  function computeRSI(closes, period){
+    if(closes.length < period+1) return null;
+    let gains=0, losses=0;
+    for(let i=closes.length-period; i<closes.length; i++){ const d=closes[i]-closes[i-1]; if(d>=0) gains+=d; else losses-=d; }
+    const avgGain=gains/period, avgLoss=losses/period;
+    if(avgLoss===0) return 100;
+    return 100 - (100/(1+avgGain/avgLoss));
+  }
+  function computeATR(candles, period){
+    if(candles.length < period+1) return null;
+    let trs=[];
+    for(let i=candles.length-period; i<candles.length; i++){
+      const c=candles[i], p=candles[i-1];
+      trs.push(Math.max(c.high-c.low, Math.abs(c.high-p.close), Math.abs(c.low-p.close)));
+    }
+    return trs.reduce((a,b)=>a+b,0)/trs.length;
+  }
+
+  function priceDecimals(p){
+    if(p >= 1000) return 2;
+    if(p >= 100) return 3;
+    if(p >= 10) return 4;
+    return 5;
+  }
+
+  function renderMetrics(candles){
+    const closes = candles.map(c=>c.close);
+    const last = candles[candles.length-1], prev = candles[candles.length-2];
+    const change = ((last.close - prev.close)/prev.close*100);
+    const rsi = computeRSI(closes, 14);
+    const atr = computeATR(candles, 14);
+    const sma10 = closes.slice(-10).reduce((a,b)=>a+b,0)/Math.min(10,closes.length);
+    const sma30 = closes.slice(-30).reduce((a,b)=>a+b,0)/Math.min(30,closes.length);
+    const trend = sma10 > sma30 ? 'ӨСӨХ' : sma10 < sma30 ? 'БУУРАХ' : 'ХӨДӨЛГӨӨНГҮЙ';
+    const trendClass = sma10 > sma30 ? 'up' : sma10 < sma30 ? 'down' : 'neutral';
+    state.lastPrice = last.close; state.lastTrend = trend;
+    const rsiLabel = rsi===null ? '—' : rsi>70 ? 'Хэт худалдан авалттай' : rsi<30 ? 'Хэт худалдсан' : 'Хэвийн';
+    const d = priceDecimals(last.close);
+    $('eudMetrics').innerHTML = `
+      <div class="eud-metric"><div class="m-label">Одоогийн үнэ (${last.time})</div><div class="m-value">${last.close.toFixed(d)}</div><div class="m-sub ${change>=0?'up':'down'}">${change>=0?'+':''}${change.toFixed(3)}%</div></div>
+      <div class="eud-metric"><div class="m-label">Тренд (SMA10/30)</div><div class="m-value ${trendClass}">${trend}</div><div class="m-sub">${sma10.toFixed(d)} / ${sma30.toFixed(d)}</div></div>
+      <div class="eud-metric"><div class="m-label">RSI (14)</div><div class="m-value">${rsi===null?'—':rsi.toFixed(1)}</div><div class="m-sub">${rsiLabel}</div></div>
+      <div class="eud-metric"><div class="m-label">ATR (14)</div><div class="m-value">${atr===null?'—':atr.toFixed(d)}</div><div class="m-sub">хэлбэлзлийн хэмжүүр</div></div>
+    `;
+  }
+
+  function renderChart(candles, patternLen){
+    const showN = Math.min(60, candles.length);
+    const shown = candles.slice(candles.length - showN);
+    const highlightFrom = showN - patternLen;
+    const w=560, h=260, padL=46, padR=8, padT=10, padB=18;
+    const plotW=w-padL-padR, plotH=h-padT-padB;
+    const highs=shown.map(c=>c.high), lows=shown.map(c=>c.low);
+    const maxP=Math.max(...highs), minP=Math.min(...lows), range=(maxP-minP)||0.0001;
+    const xStep = plotW/shown.length;
+    const yOf = (p) => padT + plotH - ((p-minP)/range)*plotH;
+    let bars = '';
+    shown.forEach((c,i) => {
+      const x = padL + i*xStep + xStep*0.15, cw = xStep*0.7;
+      const isUp = c.close >= c.open;
+      const color = isUp ? 'var(--green)' : 'var(--red)';
+      const yHigh=yOf(c.high), yLow=yOf(c.low), yOpen=yOf(c.open), yClose=yOf(c.close);
+      const bodyTop=Math.min(yOpen,yClose), bodyH=Math.max(1.2, Math.abs(yClose-yOpen));
+      const opacity = i >= highlightFrom ? 1 : 0.55;
+      bars += `<line x1="${x+cw/2}" y1="${yHigh}" x2="${x+cw/2}" y2="${yLow}" stroke="${color}" stroke-width="1" opacity="${opacity}"/>`;
+      bars += `<rect x="${x}" y="${bodyTop}" width="${cw}" height="${bodyH}" fill="${color}" opacity="${opacity}"/>`;
+    });
+    const dividerX = padL + highlightFrom*xStep;
+    const divider = highlightFrom > 0 ? `<line x1="${dividerX}" y1="${padT}" x2="${dividerX}" y2="${h-padB}" stroke="var(--gold)" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>` : '';
+    const yLabels = [maxP,(maxP+minP)/2,minP].map(p => `<text x="4" y="${yOf(p)+3}" font-family="var(--mono)" font-size="9" fill="var(--muted)">${p.toFixed(priceDecimals(p))}</text>`).join('');
+    $('eudChartWrap').innerHTML = `
+      <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:auto; display:block;">
+        <rect x="0" y="0" width="${w}" height="${h}" fill="transparent"/>${yLabels}${divider}${bars}
+      </svg>
+      <div style="font-family:var(--mono); font-size:10px; color:var(--muted); margin-top:6px;">Алтан тасархай шугам = одоогийн ${patternLen}-bar загварын эхлэл</div>
+    `;
+    $('eudChartBarsLabel').textContent = showN;
+  }
+
+  function renderMatches(matches, forwardHorizon, minSim){
+    const summary = summarizeMatches(matches);
+    $('eudMatchCount').textContent = matches.length ? `(${matches.length} олдсон)` : '';
+    $('eudFwdHeader').textContent = `Дараагийн ${forwardHorizon} bar`;
+
+    if(!matches.length){
+      $('eudSummary').innerHTML = '';
+      $('eudMatches').innerHTML = `<div class="eud-empty">Тохирох түүхэн жишээ олдсонгүй. Хамгийн бага төстэй байдлыг бууруулах, эсвэл илүү олон дата ачаалж үзнэ үү.</div>`;
+      return;
+    }
+
+    // Summary block
+    const warn = summary.n < 10
+      ? `<div style="color:var(--red); font-size:11px; margin-bottom:8px; line-height:1.5;">⚠ Ердөө ${summary.n} жишээ олдсон — статистикийн хувьд найдваргүй бага. Дүгнэлт хийхээс болгоомжилно уу.</div>`
+      : '';
+    const meanClass = summary.mean >= 0 ? 'up' : 'down';
+    const medClass = summary.median >= 0 ? 'up' : 'down';
+    $('eudSummary').innerHTML = `
+      ${warn}
+      <div style="background:var(--panel-2); border:1px solid var(--border); border-radius:4px; padding:10px; margin-bottom:10px; font-family:var(--mono); font-size:11.5px; line-height:1.9;">
+        <div>Дундаж өөрчлөлт: <span class="${meanClass}">${summary.mean>=0?'+':''}${(summary.mean*100).toFixed(3)}%</span></div>
+        <div>Медиан: <span class="${medClass}">${summary.median>=0?'+':''}${(summary.median*100).toFixed(3)}%</span></div>
+        <div>Өссөн: <span class="up">${summary.upCount}</span> / Буурсан: <span class="down">${summary.downCount}</span> (${(summary.upCount/summary.n*100).toFixed(0)}% эерэг)</div>
+        <div>Дундаж дээд өсөлт: <span class="up">+${(summary.avgMaxUp*100).toFixed(3)}%</span></div>
+        <div>Дундаж дээд уналт: <span class="down">${(summary.avgMaxDown*100).toFixed(3)}%</span></div>
+      </div>
+    `;
+
+    // Show top 8 matches
+    let html = '';
+    matches.slice(0, 8).forEach(m => {
+      const simPct=(m.similarity*100).toFixed(1), fwdPct=(m.forwardReturn*100).toFixed(2);
+      const fwdClass = m.forwardReturn>=0 ? 'up':'down';
+      const dt = new Date(m.startTime.replace(' ','T'));
+      const dateStr = isNaN(dt) ? m.startTime : dt.toLocaleDateString('mn-MN',{month:'short',day:'numeric'}) + (m.startTime.includes(':') ? ' ' + dt.toLocaleTimeString('mn-MN',{hour:'2-digit',minute:'2-digit'}) : '');
+      html += `<div class="eud-match"><span>${dateStr}</span><span class="sim">${simPct}%</span><span class="${fwdClass}">${fwdPct>=0?'+':''}${fwdPct}%</span></div>`;
+    });
+    if(matches.length > 8){
+      html += `<div class="eud-empty" style="font-size:11px;">…нийт ${matches.length} жишээнээс шилдэг 8-г харуулав. Дээрх дүгнэлт бүх жишээн дээр тооцоологдсон.</div>`;
+    }
+    $('eudMatches').innerHTML = html;
+  }
+
+  function readConfig(){
+    const g = (id, fallback) => { const el = $(id); return el ? el.value : fallback; };
+    state.patternLen = parseInt(g('eudPatternLen', 20), 10);
+    state.forwardHorizon = parseInt(g('eudHorizon', 10), 10);
+    state.minSim = parseFloat(g('eudMinSim', 0.15));
+    state.interval = g('eudInterval', '15min');
+    state.symbol = g('eudSymbol', 'EUR/USD');
+  }
+
+  function buildUrl(){
+    const outputsize = state.forwardHorizon >= 50 ? 5000 : 1000;
+    return `https://api.twelvedata.com/time_series?symbol=${state.symbol}&interval=${state.interval}&outputsize=${outputsize}&apikey=ТАНЫ_ТҮЛХҮҮР`;
+  }
+
+  function renderUrl(){
+    const box = $('eudUrlBox');
+    if(box) box.textContent = buildUrl();
+  }
+
+  function renderAll(){
+    readConfig();
+    renderUrl();
+    const candles = state.candles, patternLen = state.patternLen;
+    if(!candles.length){ showError('Өгөгдөл алга.'); return; }
+    const titleEl = $('eudTitle');
+    if(titleEl) titleEl.textContent = `${state.loadedSymbol} — Pattern Dashboard (${state.loadedInterval})`;
+    const needed = patternLen*2 + state.forwardHorizon;
+    if(candles.length < needed){
+      showError(`Одоогийн датанд ${candles.length} bar байна, харин ${patternLen}-bar загвар + ${state.forwardHorizon}-bar таамагт дор хаяж ${needed} bar хэрэгтэй. Доорх линкээр илүү олон дата татаж paste хийнэ үү.`);
+    }else if(state.loadedSymbol !== state.symbol || state.loadedInterval !== state.interval){
+      showError(`Анхаар: сонголтод ${state.symbol} / ${state.interval} байгаа ч ачаалагдсан дата нь ${state.loadedSymbol} / ${state.loadedInterval}. Доорх линкээр шинэ дата татаж paste хийнэ үү.`);
+    }else{
+      showError('');
+    }
+    setStatus('Датаны сүүлийн bar: ' + candles[candles.length-1].time, 'live');
+    renderMetrics(candles);
+    renderChart(candles, patternLen);
+    const matches = findPatternMatches(candles, patternLen, state.forwardHorizon, state.minSim);
+    state.lastMatches = matches;
+    renderMatches(matches, state.forwardHorizon, state.minSim);
+  }
+
+  // init with embedded real data
+  try{
+    state.candles = parseTwelveDataJson(JSON.stringify(INITIAL_DATA));
+    renderAll();
+  }catch(e){ showError('Эхний өгөгдөл ачаалахад алдаа гарлаа: ' + e.message); setStatus('Алдаа', 'err'); }
+
+  function doUpdate(){
+    const raw = ($('eudPasteArea').value || '').trim();
+    if(!raw){ showError('Эхлээд JSON-г талбарт paste хийнэ үү.'); return; }
+    try{
+      state.candles = parseTwelveDataJson(raw);
+      renderAll();
+      $('eudPasteArea').value = '';
+    }catch(e){ showError('Дата уншихад алдаа гарлаа: ' + e.message); setStatus('Алдаа', 'err'); }
+  }
+  function doAsk(){
+    const d = state.lastPrice ? priceDecimals(state.lastPrice) : 5;
+    const price = state.lastPrice ? state.lastPrice.toFixed(d) : 'тодорхойгүй';
+    const trend = state.lastTrend || 'тодорхойгүй';
+    const sym = state.loadedSymbol || 'EUR/USD';
+    const topMatch = state.lastMatches[0];
+    const matchNote = topMatch ? ` Хамгийн төстэй түүхэн загвар нь тухайн үед дараагийн ${state.forwardHorizon} bar-т ${(topMatch.forwardReturn*100).toFixed(2)}% хөдөлгөөн үзүүлж байсан.` : '';
+    const prompt = `${sym}-ийн одоогийн зах зээлийн нөхцөл байдлыг судалж өгнө үү: одоогийн үнэ ${price}, техник тренд ${trend}.${matchNote} Одоо ямар макро мэдээ (төв банкны шийдвэр, инфляцийн үзүүлэлт, геополитик) нөлөөлж байгаа, ойрын хугацаанд ямар чухал эдийн засгийн мэдээ гарах гэж байгааг судалгаатай тайлбарлаж өгнө үү.`;
+    if(typeof window.sendPrompt === 'function'){
+      window.sendPrompt(prompt);
+    }else{
+      showError('sendPrompt функц олдсонгүй — энэ орчинд ажиллахгүй байж магадгүй. Доорх текстийг гараар хуулж чатанд илгээнэ үү:\n\n' + prompt);
+    }
+  }
+
+  function doCopyUrl(){
+    const url = buildUrl();
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(
+        () => { const b = $('eudCopyUrlBtn'); if(b){ const t=b.textContent; b.textContent='Хуулагдлаа ✓'; setTimeout(()=>{b.textContent=t;},1500); } },
+        () => showError('Хуулж чадсангүй. Дээрх линкийг гараар сонгож хуулна уу.')
+      );
+    }else{
+      showError('Энэ орчинд автоматаар хуулах боломжгүй. Дээрх линкийг гараар сонгож хуулна уу.');
+    }
+  }
+
+  // ---- Auto-fetch (works only outside the sandboxed artifact iframe) ----
+  let netAvailable = null;
+  let autoTimer = null;
+
+  function setAutoStatus(html){ const el = $('eudAutoStatus'); if(el) el.innerHTML = html; }
+
+  async function probeNetwork(){
+    try{
+      const res = await fetch('https://api.twelvedata.com/time_series?symbol=EUR/USD&interval=1day&outputsize=1&apikey=probe', {method:'GET'});
+      // Any HTTP response (even a 401/error JSON) means the network is reachable.
+      await res.text();
+      return true;
+    }catch(e){
+      return false;
+    }
+  }
+
+  function buildFetchUrl(key){
+    const outputsize = state.forwardHorizon >= 50 ? 5000 : 1000;
+    return `https://api.twelvedata.com/time_series?symbol=${encodeURIComponent(state.symbol)}&interval=${state.interval}&outputsize=${outputsize}&apikey=${encodeURIComponent(key)}`;
+  }
+
+  async function doFetch(){
+    readConfig();
+    const keyEl = $('eudApiKey');
+    const key = keyEl ? keyEl.value.trim() : '';
+    if(!key){ showError('API key оруулна уу.'); return; }
+    setStatus('Татаж байна…', null);
+    try{
+      const res = await fetch(buildFetchUrl(key));
+      const text = await res.text();
+      state.candles = parseTwelveDataJson(text);
+      renderAll();
+      setAutoStatus(`<span style="color:var(--green);">✓ Сүүлд татсан: ${new Date().toLocaleTimeString('mn-MN')}</span>`);
+    }catch(e){
+      showError('Татахад алдаа гарлаа: ' + e.message);
+      setStatus('Алдаа', 'err');
+    }
+  }
+
+  function scheduleAuto(){
+    if(autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+    const sel = $('eudAutoRefresh');
+    const secs = sel ? parseInt(sel.value, 10) : 0;
+    if(secs > 0 && netAvailable){ autoTimer = setInterval(doFetch, secs*1000); }
+  }
+
+  async function initAutoFetch(){
+    netAvailable = await probeNetwork();
+    if(netAvailable){
+      setAutoStatus('Энэ орчинд шууд татах боломжтой. API key-гээ оруулаад давтамжаа сонгоно уу — сонгосон хугацаа тутамд өөрөө шинэчлэгдэнэ.');
+      const c = $('eudAutoControls'); if(c) c.style.display = 'flex';
+    }else{
+      setAutoStatus('Автомат татах энэ орчинд боломжгүй — Claude-ийн artifact хайрцаг гадны серверт холбогдохыг блоклодог.<br><br>' +
+        '<b style="color:var(--gold);">Бүрэн автомат болгох арга:</b> дээрх "…" цэснээс энэ файлыг татаж авч (Download), утас/компьютерынхаа browser-ээр нээнэ үү. Тэнд энэ хэсэг идэвхжиж, API key оруулахад өөрөө тогтмол шинэчлэгддэг болно.<br><br>' +
+        'Энэ хайрцаг дотор бол доорх "Гараар шинэчлэх" хэсгийг ашиглана уу.');
+    }
+  }
+
+
+  function handleActivate(target){
+    const btn = target.closest ? target.closest('button') : null;
+    if(!btn) return;
+    if(btn.id === 'eudRecalcBtn'){ renderAll(); }
+    else if(btn.id === 'eudUpdateBtn'){ doUpdate(); }
+    else if(btn.id === 'eudAskBtn'){ doAsk(); }
+    else if(btn.id === 'eudCopyUrlBtn'){ doCopyUrl(); }
+    else if(btn.id === 'eudFetchBtn'){ doFetch(); }
+  }
+
+  function attachHandlers(){
+    const root = $('eudRoot') || document;
+    root.addEventListener('click', (e) => handleActivate(e.target));
+    root.addEventListener('touchend', (e) => {
+      if(e.target && e.target.tagName === 'BUTTON'){ e.preventDefault(); handleActivate(e.target); }
+    }, {passive:false});
+    ['eudPatternLen','eudHorizon','eudMinSim','eudInterval','eudSymbol'].forEach(id => {
+      const el = $(id);
+      if(el) el.addEventListener('change', () => {
+        renderAll();
+        // If auto-fetch is live, pull fresh data for the newly selected instrument.
+        if(netAvailable && (id === 'eudSymbol' || id === 'eudInterval')){
+          const keyEl = $('eudApiKey');
+          if(keyEl && keyEl.value.trim()) doFetch();
+        }
+      });
+    });
+    const autoSel = $('eudAutoRefresh');
+    if(autoSel) autoSel.addEventListener('change', scheduleAuto);
+    renderUrl();
+    initAutoFetch();
+  }
+
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', attachHandlers);
+  }else{
+    attachHandlers();
+  }
+})();
+</script>
